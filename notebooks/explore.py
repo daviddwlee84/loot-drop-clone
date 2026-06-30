@@ -1,3 +1,12 @@
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "marimo",
+#     "pandas",
+#     "plotly==5.24.1",
+# ]
+# ///
+
 import marimo
 
 __generated_with = "0.23.11"
@@ -5,36 +14,28 @@ app = marimo.App(width="medium", app_title="Loot Drop 創業墳場分析")
 
 
 @app.cell
-async def _():
-    import sys
+def _():
     import marimo as mo
-
-    # WASM(Pyodide)環境需用 micropip 安裝 plotly
-    if sys.platform == "emscripten":
-        import micropip
-        await micropip.install("plotly")
-
     import json
     import pandas as pd
     import plotly.express as px
     import plotly.graph_objects as go
-    return go, json, mo, pd, px
+
+    return json, mo, pd, px
 
 
 @app.cell
 def _(mo):
-    mo.md(
-        """
-        # 🪦 Loot Drop 創業墳場 — 互動分析
+    mo.md("""
+    # 🪦 Loot Drop 創業墳場 — 互動分析
 
-        資料來源:[loot-drop.io](https://www.loot-drop.io/) 背後 Supabase,本地 clone 共 **1749 家**倒閉公司。
+    資料來源:[loot-drop.io](https://www.loot-drop.io/) 背後 Supabase,本地 clone 共 **1749 家**倒閉公司。
 
-        > ⚠️ 資料為 AI 生成之公開資料彙整,`total_funding` 語意不純(混募資額與公司總規模),
-        > 時間趨勢含少數「未來預判」標記。詳見 `docs/04-data-quality-caveats.md`。
-        >
-        > 💡 本 notebook 同時支援本地執行與瀏覽器內 WASM 執行;資料從 `public/*.json` 載入。
-        """
-    )
+    > ⚠️ 資料為 AI 生成之公開資料彙整,`total_funding` 語意不純(混募資額與公司總規模),
+    > 時間趨勢含少數「未來預判」標記。詳見 `docs/04-data-quality-caveats.md`。
+    >
+    > 💡 本 notebook 同時支援本地執行與瀏覽器內 WASM 執行;資料從 `public/*.json` 載入。
+    """)
     return
 
 
@@ -71,15 +72,13 @@ def _(mo, startups):
 
 @app.cell
 def _(mo):
-    mo.md(
-        """
-        ---
-        ## 1. 死因 × 燒錢散點
+    mo.md("""
+    ---
+    ## 1. 死因 × 燒錢散點
 
-        每個點是一家公司。**X = 募資額(對數)、Y = 存活年數、顏色 = 死因**。
-        用下方控制項篩選。
-        """
-    )
+    每個點是一家公司。**X = 募資額(對數)、Y = 存活年數、顏色 = 死因**。
+    用下方控制項篩選。
+    """)
     return
 
 
@@ -146,18 +145,16 @@ def _(df, mo, px):
 
 @app.cell
 def _(mo):
-    mo.md(
-        """
-        ---
-        ## 2. 🗺️ 創業生態地圖(復刻 landscape_x/y 降維散點)
+    mo.md("""
+    ---
+    ## 2. 🗺️ 創業生態地圖(復刻 landscape_x/y 降維散點)
 
-        這是 Loot Drop dashboard 的視覺核心 —— `analytics` 表用 NLP 把每家公司的題材
-        壓成 2D 座標(UMAP/t-SNE 類)。**距離越近 = 題材越相似**,軸本身無物理意義。
-        顏色 = 它分類的 `bottleneck_tag`(真正卡死的瓶頸)。
+    這是 Loot Drop dashboard 的視覺核心 —— `analytics` 表用 NLP 把每家公司的題材
+    壓成 2D 座標(UMAP/t-SNE 類)。**距離越近 = 題材越相似**,軸本身無物理意義。
+    顏色 = 它分類的 `bottleneck_tag`(真正卡死的瓶頸)。
 
-        > 僅覆蓋 596 家(全庫的 34%)。
-        """
-    )
+    > 僅覆蓋 596 家(全庫的 34%)。
+    """)
     return
 
 
@@ -193,15 +190,13 @@ def _(analytics, mo, px):
 
 @app.cell
 def _(mo):
-    mo.md(
-        """
-        ---
-        ## 3. 死因深掘:平均燒錢 vs 平均壽命
+    mo.md("""
+    ---
+    ## 3. 死因深掘:平均燒錢 vs 平均壽命
 
-        反直覺重點:**「競爭」死的公司燒最少、活最短**(紅海被輾);
-        **「沒錢」死的反而燒最多、撐最久**(募巨資硬撐到斷鏈)。
-        """
-    )
+    反直覺重點:**「競爭」死的公司燒最少、活最短**(紅海被輾);
+    **「沒錢」死的反而燒最多、撐最久**(募巨資硬撐到斷鏈)。
+    """)
     return
 
 
@@ -236,14 +231,12 @@ def _(px, startups):
 
 @app.cell
 def _(mo):
-    mo.md(
-        """
-        ---
-        ## 4. 最擁擠的賽道(最多人做 = 最多人死)
+    mo.md("""
+    ---
+    ## 4. 最擁擠的賽道(最多人做 = 最多人死)
 
-        進這些題材前先看看死了多少同行。
-        """
-    )
+    進這些題材前先看看死了多少同行。
+    """)
     return
 
 
@@ -271,15 +264,13 @@ def _(analytics, px):
 
 @app.cell
 def _(mo):
-    mo.md(
-        """
-        ---
-        ## 5. 🔎 案例查詢器:看任一家的「付費」完整內容
+    mo.md("""
+    ---
+    ## 5. 🔎 案例查詢器:看任一家的「付費」完整內容
 
-        選一家公司,直接讀出它的 `the_loot`(教訓)/ `market_analysis` / `pivot_idea`
-        —— 這些就是 Loot Drop 拿來賣的 Rebuild Plan 內容。
-        """
-    )
+    選一家公司,直接讀出它的 `the_loot`(教訓)/ `market_analysis` / `pivot_idea`
+    —— 這些就是 Loot Drop 拿來賣的 Rebuild Plan 內容。
+    """)
     return
 
 
