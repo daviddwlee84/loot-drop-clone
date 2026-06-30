@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LHFJD77F8R"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-LHFJD77F8R');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Startup Rebuild Plans | Turn 1,670 Failures Into Your Next Business</title>
+    <meta name="description"
+        content="Every failed startup is a rebuild opportunity. Browse 1,670 data-backed business plans extracted from real startup failures — with tech stacks, market analysis, and what to avoid.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://www.loot-drop.io/rebuilds">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.loot-drop.io/rebuilds">
+    <meta property="og:title" content="Startup Rebuild Plans | Turn Failures Into Business Plans">
+    <meta property="og:description"
+        content="Browse 1,670 data-backed rebuild plans extracted from real startup failures.">
+    <meta property="og:image" content="https://www.loot-drop.io/showcase_preview.png">
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://www.loot-drop.io/rebuilds">
+    <meta property="twitter:title" content="Startup Rebuild Plans | Turn Failures Into Business Plans">
+    <meta property="twitter:description"
+        content="Browse 1,670 data-backed rebuild plans extracted from real startup failures.">
+    <meta property="twitter:image" content="https://www.loot-drop.io/showcase_preview.png">
+    <link rel="icon" href="/favicon.svg">
+    <link rel="stylesheet" href="/styles/shared-nav.css">
+  <script type="module" crossorigin src="/assets/rebuilds-99mTTpbU.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
+  <link rel="stylesheet" crossorigin href="/assets/rebuilds-CloPTjD5.css">
+  <link rel="stylesheet" crossorigin href="/assets/fonts-Bw7-ehfR.css">
+</head>
+
+<body>
+    <nav class="site-navbar">
+        <div class="site-nav-top-row">
+            <a href="/" class="site-back-btn"><span class="site-arrow-back">&lt;</span> BACK TO GRAVEYARD</a>
+            <div class="site-nav-logo">STARTUP GRAVEYARD</div>
+            <div class="site-nav-spacer"></div>
+        </div>
+        <div class="site-nav-bottom-row">
+            <div class="site-nav-links">
+                <a href="/lists">TOP 10</a>
+                <a href="/insights">INSIGHTS</a>
+                <a href="/why-they-fail">LEARNING FRAMEWORK</a>
+                <a href="/deep-dives">DEEP DIVES</a>
+                <a href="/ideas">STARTUP IDEAS</a>
+                <a href="/dashboard">DASHBOARD</a>
+                <a href="/database-view">DATABASE VIEW</a>
+                <a href="/rebuilds" class="site-nav-active">REBUILD PLANS</a>
+                <a href="/faq">FAQ</a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="rb-hero">
+        <div class="rb-hero-inner">
+            <span class="rb-kicker">FROM GRAVEYARD TO GOLDMINE</span>
+            <h1>Startup Rebuild Plans</h1>
+            <p>Every failed startup left behind a market gap, validated demand, and hard-won lessons. We turned 1,670
+                failures into actionable rebuild plans — each backed by real data, real funding, and real mistakes to
+                avoid.</p>
+            <div class="rb-live-note">
+                <span class="rb-live-dot"></span>
+                New plans added with every batch of startup failures
+            </div>
+            <div class="rb-hero-stats">
+                <div class="rb-hero-stat">
+                    <span class="rb-hero-stat-value" id="rb-hero-total">--</span>
+                    <span class="rb-hero-stat-label">REBUILD PLANS</span>
+                </div>
+            </div>
+            <div style="margin-top:14px;"><button class="dc-btn" type="button"
+                    style="background:#fff;color:#000;">Disclaimer</button></div>
+        </div>
+    </header>
+
+    <!-- CONTROLS -->
+    <section class="rb-controls">
+        <div class="rb-filter-row">
+            <input type="text" class="rb-search" id="rb-search" placeholder="Search rebuild plans..."
+                autocomplete="off">
+            <select class="rb-select" id="rb-sector">
+                <option value="">All sectors</option>
+            </select>
+            <select class="rb-select" id="rb-product">
+                <option value="">All product types</option>
+            </select>
+            <select class="rb-select" id="rb-country">
+                <option value="">All countries</option>
+            </select>
+            <select class="rb-select" id="rb-cause">
+                <option value="">All causes</option>
+            </select>
+            <select class="rb-select" id="rb-market">
+                <option value="">All market potential</option>
+                <option value="high">High potential</option>
+                <option value="medium">Medium potential</option>
+                <option value="low">Low potential</option>
+            </select>
+        </div>
+        <div class="rb-sort-row">
+            <span class="rb-result-count" id="rb-result-count">0 rebuild plans</span>
+            <button class="rb-sort-pill active" data-sort="newest">NEWEST</button>
+            <button class="rb-sort-pill" data-sort="market">MARKET POTENTIAL</button>
+            <button class="rb-sort-pill" data-sort="scalability">SCALABILITY</button>
+            <button class="rb-sort-pill" data-sort="easiest">EASIEST BUILD</button>
+            <button class="rb-sort-pill" data-sort="burned">MOST FUNDED</button>
+            <button class="rb-clear-btn" id="rb-clear">CLEAR ALL</button>
+        </div>
+    </section>
+
+    <!-- CARD GRID -->
+    <div class="rb-grid" id="rb-grid">
+        <div class="rb-empty">Loading rebuild plans...</div>
+    </div>
+
+    <!-- PAGINATION -->
+    <div class="rb-pagination">
+        <button class="rb-page-btn" id="rb-prev" disabled>&larr; PREV</button>
+        <span class="rb-page-info" id="rb-page-info">Page 1 / 1</span>
+        <button class="rb-page-btn" id="rb-next" disabled>NEXT &rarr;</button>
+    </div>
+
+    <div style="max-width:720px;margin:24px auto 40px;padding:0 20px;">
+        <p style="font-family:'Space Grotesk',sans-serif;font-size:11px;line-height:1.7;color:#999;text-align:center;">
+            Disclaimer: This content is an AI-assisted summary and analysis derived from publicly available sources only
+            (news, founder statements, funding data, etc.). It represents patterns, opinions, and interpretations for
+            educational purposes&mdash;not verified facts, accusations, or professional advice. AI can contain errors or
+            &lsquo;hallucinations&rsquo;; all content is human-reviewed but provided &lsquo;as is&rsquo; with no
+            warranties of accuracy, completeness, or reliability. We disclaim all liability for reliance on or use of
+            this information. If you believe any information is inaccurate or wish to request a correction, please click
+            the <strong style="color:#666;">Disclaimer</strong> button to submit a request.
+        </p>
+    </div>
+    <script src="/js/disclaimer.js" defer></script>
+</body>
+
+</html>

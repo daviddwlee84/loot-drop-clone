@@ -1,0 +1,12 @@
+[project]
+name = "loot-drop-clone"
+version = "0.1.0"
+description = "Local clone, snapshot & analysis of loot-drop.io (startup graveyard)"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "altair>=6.2.2",
+    "marimo>=0.23.11",
+    "pandas>=3.0.3",
+    "plotly>=6.8.0",
+]

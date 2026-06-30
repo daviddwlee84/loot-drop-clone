@@ -1,0 +1,24 @@
+# Python / uv
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.python-version
+
+# 衍生物：可由 build_db.py 從 data/*.json 重建，不進版控
+lootdrop.db
+*.db-journal
+*.db-wal
+
+# marimo
+__marimo__/
+.marimo.toml
+
+# macOS
+.DS_Store
+
+# 工具輸出
+/tmp/
+
+# 快照的 startups 原始大檔（16MB,與 data/startups.json 重複；用 snapshot/grab_api.py 可重抓）
+snapshot/api/startups_page*.json

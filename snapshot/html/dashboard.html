@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LHFJD77F8R"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-LHFJD77F8R');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loot Drop Dashboard | Failure Forensics</title>
+    <link rel="icon" href="/favicon.svg" />
+    <!-- Local Fonts (GDPR Compliant) -->
+    <link rel="stylesheet" href="/styles/shared-nav.css">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2807847929917670"
+        crossorigin="anonymous"></script>
+  <script type="module" crossorigin src="/assets/dashboard-CohJd-83.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
+  <link rel="modulepreload" crossorigin href="/assets/supabaseClient-CuYTLnyz.js">
+  <link rel="modulepreload" crossorigin href="/assets/km-survival-Cgt_KFet.js">
+  <link rel="stylesheet" crossorigin href="/assets/dashboard-6Wqk2E28.css">
+  <link rel="stylesheet" crossorigin href="/assets/fonts-Bw7-ehfR.css">
+  <link rel="stylesheet" crossorigin href="/assets/style-R3uuT_in.css">
+</head>
+
+<body class="dashboard-page">
+    <nav class="site-navbar">
+        <div class="site-nav-top-row">
+            <a href="/" class="site-back-btn"><span class="site-arrow-back">&lt;</span> BACK TO GRAVEYARD</a>
+            <div class="site-nav-logo">STARTUP GRAVEYARD</div>
+            <div class="site-nav-spacer"></div>
+        </div>
+        <div class="site-nav-bottom-row">
+            <div class="site-nav-links">
+                <a href="/lists">TOP 10</a>
+                <a href="/insights">INSIGHTS</a>
+                <a href="/why-they-fail">LEARNING FRAMEWORK</a>
+                <a href="/deep-dives">DEEP DIVES</a>
+                <a href="/ideas">STARTUP IDEAS</a>
+                <a href="/dashboard" class="site-nav-active">DASHBOARD</a>
+                <a href="/database-view">DATABASE VIEW</a>
+                <a href="/rebuilds">REBUILD PLANS</a>
+                <a href="/faq">FAQ</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="dashboard-main">
+        <div class="dashboard-grid">
+            <!-- Dashboard Manual -->
+            <section class="dashboard-card info-card span-2" id="dashboard-manual">
+                <div class="guide-header">
+                    <h2>FORENSIC TOOLKIT MANUAL</h2>
+                    <p>How to interpret and interact with the data artifacts</p>
+                </div>
+                <div class="guide-grid">
+                    <div class="guide-item">
+                        <h3>Time-to-Failure</h3>
+                        <p>A Kaplan-Meier survival estimator. It calculates the probability of a startup remaining
+                            "alive" over time based on their funding stage.</p>
+                        <span class="interaction">💡 HOVER to see survival % at specific year marks.</span>
+                    </div>
+                    <div class="guide-item">
+                        <h3>The Spider's Web</h3>
+                        <p>Visualizes the connective tissue between investors and their failed bets. Thick clusters
+                            reveal high-risk network nodes.</p>
+                        <span class="interaction">🖱️ DRAG nodes to reorganize the chaos.</span>
+                    </div>
+                    <div class="guide-item">
+                        <h3>Forensic Flows</h3>
+                        <p>The Sankey (Fatal Flaw) diagram maps value propositions to their ultimate failure modes. It
+                            reveals industry-specific "death patterns".</p>
+                        <span class="interaction">👆 CLICK boxes to isolate a specific flow.</span>
+                    </div>
+                    <div class="guide-item">
+                        <h3>Global Access</h3>
+                        <p>Every data point across all charts is connected to a full autopsy report from the graveyard
+                            database.</p>
+                        <span class="interaction">💀 CLICK any point to reveal the sidebar autopsy.</span>
+                    </div>
+                    <div style="margin-top:12px;"><button class="dc-btn" type="button">Disclaimer</button></div>
+                </div>
+            </section>
+            <!-- 1. Time-to-Failure Analysis -->
+            <section class="dashboard-card chart-container span-2" id="km-survival-section">
+                <div class="card-header">
+                    <h2>TIME-TO-FAILURE ANALYSIS</h2>
+                    <p>Survival Probability by Funding (Kaplan-Meier Estimator)</p>
+                </div>
+                <div class="canvas-wrapper" style="min-height: 500px;">
+                    <div id="km-chart" style="width:100%; height:100%;"></div>
+                </div>
+                <p class="chart-footnote">All startups in this analysis eventually failed → curves reach 0%.</p>
+            </section>
+
+            <!-- 2. Funding Distribution Ridgeline -->
+            <section class="dashboard-card chart-container span-2" id="ridgeline-section">
+                <div class="card-header">
+                    <h2>FUNDING DENSITY BY CATEGORY</h2>
+                    <p>Ridgeline (Joy Plot) showing distribution of total capital burned (Log Scale)</p>
+                </div>
+                <div class="canvas-wrapper" style="min-height: 550px;">
+                    <div id="ridgeline-chart" style="width:100%; height:100%;"></div>
+                </div>
+                <div class="chart-controls">
+                    <span class="label">X: TOTAL FUNDING (LOG SCALE)</span>
+                    <span class="label">Y: VALUE PROP CATEGORIES</span>
+                </div>
+            </section>
+
+            <!-- 3. The Spider's Web -->
+            <section class="dashboard-card chart-container span-2" id="spiders-web-section" style="display:none;">
+                <div class="card-header">
+                    <h2>THE "SPIDER’S WEB"</h2>
+                    <p>Investor-Founder Network</p>
+                </div>
+                <div id="spiders-web-graph" class="d3-wrapper"></div>
+            </section>
+
+            <!-- 4. Bottleneck Detector -->
+            <section class="dashboard-card chart-container" id="bottleneck-detector-section">
+                <div class="card-header">
+                    <h2>BOTTLENECK DETECTOR</h2>
+                    <p>Horizontal Bar Chart (Aggregated Blockers)</p>
+                </div>
+                <div class="canvas-wrapper">
+                    <div id="bottleneck-detector-chart" style="width:100%; height:100%;"></div>
+                </div>
+            </section>
+
+            <!-- 4. Barrier Matrix -->
+            <section class="dashboard-card chart-container" id="barrier-matrix-section">
+                <div class="card-header">
+                    <h2>BARRIER MATRIX</h2>
+                    <p>Heatmap: Sector vs. Difficulty Type</p>
+                </div>
+                <div class="canvas-wrapper">
+                    <div id="barrier-matrix-chart" style="width:100%; height:100%;"></div>
+                </div>
+            </section>
+
+            <!-- 5. Problem Treemap -->
+            <section class="dashboard-card chart-container span-2" id="problem-treemap-section">
+                <div class="card-header">
+                    <h2>PROBLEM TREEMAP</h2>
+                    <p>Size: Count | Color: Average Lifespan (Years)</p>
+                </div>
+                <div class="canvas-wrapper">
+                    <div id="problem-treemap-chart" style="width:100%; height:100%;"></div>
+                </div>
+            </section>
+
+            <!-- 6. Fatal Flaw Flow -->
+            <section class="dashboard-card chart-container span-2" id="fatal-flaw-section">
+                <div class="card-header">
+                    <h2>THE "FATAL FLAW" FLOW</h2>
+                    <p>Sankey Diagram: Value Proposition vs. Cause of Death</p>
+                </div>
+                <div class="canvas-wrapper">
+                    <div id="fatal-flaw-chart" style="width:100%; height:100%;"></div>
+                </div>
+            </section>
+
+
+            <!-- 8. The Burn Zone -->
+            <section class="dashboard-card chart-container span-2" id="burn-zone-section">
+                <div class="card-header">
+                    <h2>THE "BURN ZONE"</h2>
+                    <p>Lifespan vs. Funding (Interactive Scatter Plot)</p>
+                </div>
+                <div class="canvas-wrapper">
+                    <div id="burn-zone-chart" style="width:100%; height:100%;"></div>
+                </div>
+                <div class="chart-controls">
+                    <span class="label">X: LIFESPAN (YEARS)</span>
+                    <span class="label">Y: FUNDING (LOG)</span>
+                    <span class="label">SIZE: MARKET POTENTIAL</span>
+                </div>
+            </section>
+        </div>
+
+        <!-- Autopsy Sidebar -->
+        <aside class="autopsy-sidebar" id="autopsy-sidebar">
+            <button class="close-sidebar" id="close-sidebar">✕</button>
+            <div id="sidebar-content" class="sidebar-content">
+                <div class="sidebar-placeholder">
+                    <div class="placeholder-icon">💀</div>
+                    <h3>SELECT A CORPSE</h3>
+                    <p>Click on any data point to reveal the full autopsy report.</p>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <div style="max-width:720px;margin:24px auto 40px;padding:0 20px;">
+        <p style="font-family:'Space Grotesk',sans-serif;font-size:11px;line-height:1.7;color:#999;text-align:center;">
+            Disclaimer: This content is an AI-assisted summary and analysis derived from publicly available sources only
+            (news, founder statements, funding data, etc.). It represents patterns, opinions, and interpretations for
+            educational purposes&mdash;not verified facts, accusations, or professional advice. AI can contain errors or
+            &lsquo;hallucinations&rsquo;; all content is human-reviewed but provided &lsquo;as is&rsquo; with no
+            warranties of accuracy, completeness, or reliability. We disclaim all liability for reliance on or use of
+            this information. If you believe any information is inaccurate or wish to request a correction, please click
+            the <strong style="color:#666;">Disclaimer</strong> button to submit a request.
+        </p>
+    </div>
+    <script src="/js/disclaimer.js" defer></script>
+</body>
+
+</html>
