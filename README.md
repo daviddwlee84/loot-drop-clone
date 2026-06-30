@@ -4,6 +4,9 @@
 快照備份與分析。資料經其前端公開的 Supabase anon API 取得,共 **1749 家**倒閉公司。
 
 > 📊 **線上版(GitHub Pages)**:<https://daviddwlee84.github.io/loot-drop-clone/>
+> — 含[靜態互動圖表](https://daviddwlee84.github.io/loot-drop-clone/notebook.html)、
+> [WASM 完全互動 notebook](https://daviddwlee84.github.io/loot-drop-clone/notebook-wasm/)、
+> [IT 產業深度報告](https://daviddwlee84.github.io/loot-drop-clone/it-sector-deep-dive.html)
 
 > ⚠️ 全部內容為 **AI 生成之公開資料彙整**,僅供研究/學習。`total_funding` 等欄位語意不純,
 > 分析前請先讀 [`docs/04-data-quality-caveats.md`](docs/04-data-quality-caveats.md)。
@@ -47,28 +50,37 @@
 
 ## 快速開始
 
-需要 [uv](https://docs.astral.sh/uv/)。
+需要 [uv](https://docs.astral.sh/uv/)。本專案用 [just](https://github.com/casey/just) 收錄常用操作:
 
 ```bash
-# 1. 建環境(自動讀 pyproject.toml / uv.lock)
-uv sync
-
-# 2. 從 data/*.json 重建 SQLite
-uv run python build_db.py
-
-# 3. CLI 統計分析
-uv run python analyze.py
-
-# 4. 開互動 notebook(瀏覽器)
-uv run marimo edit notebooks/explore.py
+just            # 列出所有指令
+just sync       # 安裝依賴
+just db         # 從 data/*.json 重建 SQLite
+just analyze    # CLI 統計分析
+just notebook   # 開互動 notebook(瀏覽器)
+just build-all  # 建好整個 site/(db+靜態站+notebook+WASM)
+just serve      # 本地預覽 site/
 ```
 
-重新爬取/重抓快照(可選,資料已在 repo):
+不用 just 的話,直接呼叫對應腳本即可(見 Justfile 內容)。
+
+### 直接拿現成資料(免 build)
+
+`lootdrop.db` 已放 [GitHub Release](https://github.com/daviddwlee84/loot-drop-clone/releases/tag/data-2026-06-30),
+可一鍵下載直接查詢:
 
 ```bash
-uv run python fetch_all.py                 # 重爬資料
-uv run python snapshot/grab_site.py        # 重抓網頁+JS
-uv run python snapshot/grab_api.py         # 重抓 API 回應
+just download-db
+# 或:gh release download data-2026-06-30 -p lootdrop.db -R daviddwlee84/loot-drop-clone
+sqlite3 lootdrop.db "SELECT name,total_funding FROM startups ORDER BY total_funding DESC LIMIT 5"
+```
+
+### 重新爬取/重抓快照(可選)
+
+```bash
+just fetch          # 重爬資料(打 Supabase,內建節流)
+just snapshot-site  # 重抓網頁+JS
+just snapshot-api   # 重抓 API 回應
 ```
 
 ## 主要發現速覽
