@@ -5,6 +5,13 @@ on:
     branches: [main]
     paths:
       - "site/**"
+      - "docs/**"
+      - "reports/**"
+      - "notebooks/**"
+      - "data/**"
+      - "build_site.py"
+      - "build_wasm.py"
+      - "build_db.py"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch:
 
@@ -18,13 +25,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync deps
+        run: uv sync
+
+      - name: Rebuild SQLite from data/
+        run: uv run python build_db.py
+
+      - name: Build static HTML site
+        run: uv run python build_site.py
+
+      - name: Build WASM notebook (Pyodide)
+        run: uv run python build_wasm.py
+
       - uses: actions/configure-pages@v5
       - name: Upload site/ as Pages artifact
         uses: actions/upload-pages-artifact@v3

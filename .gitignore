@@ -22,3 +22,8 @@ __marimo__/
 
 # 快照的 startups 原始大檔（16MB,與 data/startups.json 重複；用 snapshot/grab_api.py 可重抓）
 snapshot/api/startups_page*.json
+
+# WASM notebook export(含 27MB Pyodide runtime;由 CI/build_wasm 現場生成)
+site/notebook-wasm/
+# notebook 的 public 資料(由 build_wasm 從 lootdrop.db 生成)
+notebooks/public/

@@ -5,15 +5,20 @@ app = marimo.App(width="medium", app_title="Loot Drop 創業墳場分析")
 
 
 @app.cell
-def _():
+async def _():
+    import sys
     import marimo as mo
-    import sqlite3
+
+    # WASM(Pyodide)環境需用 micropip 安裝 plotly
+    if sys.platform == "emscripten":
+        import micropip
+        await micropip.install("plotly")
+
     import json
     import pandas as pd
     import plotly.express as px
     import plotly.graph_objects as go
-    from pathlib import Path
-    return Path, go, json, mo, pd, px, sqlite3
+    return go, json, mo, pd, px
 
 
 @app.cell
@@ -26,19 +31,19 @@ def _(mo):
 
         > ⚠️ 資料為 AI 生成之公開資料彙整,`total_funding` 語意不純(混募資額與公司總規模),
         > 時間趨勢含少數「未來預判」標記。詳見 `docs/04-data-quality-caveats.md`。
+        >
+        > 💡 本 notebook 同時支援本地執行與瀏覽器內 WASM 執行;資料從 `public/*.json` 載入。
         """
     )
     return
 
 
 @app.cell
-def _(Path, pd, sqlite3):
-    # 連本地 SQLite(相對 notebook 位置往上一層找 lootdrop.db)
-    DB = Path(__file__).parent.parent / "lootdrop.db"
-    _con = sqlite3.connect(str(DB))
-    startups = pd.read_sql("SELECT * FROM startups", _con)
-    analytics = pd.read_sql("SELECT * FROM analytics", _con)
-    _con.close()
+def _(mo, pd):
+    # 從 public/ 載入資料(mo.notebook_location 在本地與 WASM 皆可用)
+    _base = mo.notebook_location() / "public"
+    startups = pd.read_json(str(_base / "startups.json"))
+    analytics = pd.read_json(str(_base / "analytics.json"))
 
     # 衍生欄位
     startups["lifespan"] = startups["end_year"] - startups["start_year"]
@@ -308,6 +313,10 @@ def _(json, mo, picker, startups):
     except Exception:
         pass
 
+    # market_analysis 在精簡版(public/)中省略以縮小體積;本地完整 db 才有
+    _market = _row["market_analysis"] if "market_analysis" in _row.index else \
+        "_(精簡版省略 — 完整 market_analysis 見 lootdrop.db 或原站)_"
+
     mo.vstack([
         mo.md(f"### {_row['name']} · {_row['sector']} · {_row['country']}"),
         mo.hstack([
@@ -317,7 +326,7 @@ def _(json, mo, picker, startups):
             mo.stat(f"{int(_row['views']):,}", label="瀏覽"),
         ], justify="start"),
         mo.md(f"**💎 The Loot(教訓):**\n\n{_loot}"),
-        mo.md(f"**📊 Market Analysis:**\n\n{_row['market_analysis']}"),
+        mo.md(f"**📊 Market Analysis:**\n\n{_market}"),
         mo.md(f"**🔧 Pivot Idea / Rebuild Plan:**\n\n```json\n{_pivot}\n```"),
     ])
     return

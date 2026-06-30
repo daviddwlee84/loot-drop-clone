@@ -72,6 +72,24 @@ PAGE = """<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>
+<meta name="description" content="{desc}">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Loot Drop 創業墳場分析">
+<meta property="og:title" content="{title}">
+<meta property="og:description" content="{desc}">
+<meta property="og:url" content="{base_url}{page}">
+<meta property="og:image" content="{base_url}og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{title}">
+<meta name="twitter:description" content="{desc}">
+<meta name="twitter:image" content="{base_url}og-image.png">
+
 <style>{css}</style>
 </head><body>
 {nav}
@@ -81,14 +99,20 @@ PAGE = """<!doctype html>
 </div>
 </body></html>"""
 
+BASE_URL = "https://daviddwlee84.github.io/loot-drop-clone/"
+DEFAULT_DESC = ("loot-drop.io 創業墳場資料分析:1749 家失敗創業案例、總燒 $535B。"
+                "含 Supabase 逆向發現、互動 notebook、IT 產業深度報告。")
+
 md = markdown.Markdown(extensions=["tables", "fenced_code", "toc", "sane_lists"])
 
 
-def convert(src: pathlib.Path, out_name: str, title: str):
+def convert(src: pathlib.Path, out_name: str, title: str, desc: str = ""):
     md.reset()
     html_body = md.convert(src.read_text(encoding="utf-8"))
     (SITE / out_name).write_text(
-        PAGE.format(title=title, css=CSS, nav=NAV, body=html_body), encoding="utf-8"
+        PAGE.format(title=title, desc=desc or DEFAULT_DESC, css=CSS, nav=NAV,
+                    body=html_body, base_url=BASE_URL, page=out_name),
+        encoding="utf-8",
     )
     print(f"  {src.name} -> {out_name}")
 
@@ -117,8 +141,10 @@ def main():
 
 <h2>互動分析</h2>
 <div class="grid">
-  <div class="card"><a href="notebook.html">📊 互動 Notebook</a>
-    <p>死因散點、創業生態地圖、案例查詢器(plotly 互動圖表)</p></div>
+  <div class="card"><a href="notebook.html">📊 互動 Notebook(靜態)</a>
+    <p>死因散點、創業生態地圖、案例查詢器。秒開,plotly 圖表可縮放/hover</p></div>
+  <div class="card"><a href="notebook-wasm/index.html">⚡ 互動 Notebook(WASM)</a>
+    <p>瀏覽器內跑 Python,篩選器/下拉全可互動。<b>首次載入較慢</b>(下載 runtime)</p></div>
   <div class="card"><a href="it-sector-deep-dive.html">💻 IT 產業深度報告</a>
     <p>408 家 IT 失敗解剖 + 5 招牌案例完整拆解</p></div>
 </div>
@@ -144,7 +170,8 @@ def main():
 <a href="https://github.com/daviddwlee84/loot-drop-clone" target="_blank">GitHub repo</a>。</p>
 """
     (SITE / "index.html").write_text(
-        PAGE.format(title="Loot Drop 創業墳場分析", css=CSS, nav=NAV, body=landing_body),
+        PAGE.format(title="Loot Drop 創業墳場分析", desc=DEFAULT_DESC, css=CSS,
+                    nav=NAV, body=landing_body, base_url=BASE_URL, page=""),
         encoding="utf-8",
     )
     print("  -> index.html (landing)")
