@@ -3,6 +3,8 @@
 [loot-drop.io](https://www.loot-drop.io/)(失敗創業案例庫「創業墳場」)的本地資料 clone、
 快照備份與分析。資料經其前端公開的 Supabase anon API 取得,共 **1749 家**倒閉公司。
 
+> 📊 **線上版(GitHub Pages)**:<https://daviddwlee84.github.io/loot-drop-clone/>
+
 > ⚠️ 全部內容為 **AI 生成之公開資料彙整**,僅供研究/學習。`total_funding` 等欄位語意不純,
 > 分析前請先讀 [`docs/04-data-quality-caveats.md`](docs/04-data-quality-caveats.md)。
 
@@ -41,6 +43,7 @@
 | [03-data-findings](docs/03-data-findings.md) | 資料分析發現(死因/燒錢/瓶頸/投資人) |
 | [04-data-quality-caveats](docs/04-data-quality-caveats.md) | **分析前必讀**:三個會扭曲結論的資料陷阱 |
 | [05-rls-security-guide](docs/05-rls-security-guide.md) | 通用教學:Supabase 免費/付費內容的 RLS 隔離 |
+| [06-tech-stack-choice](docs/06-tech-stack-choice.md) | 新創選型:Supabase vs 自架 DB + 第三方 Auth |
 
 ## 快速開始
 

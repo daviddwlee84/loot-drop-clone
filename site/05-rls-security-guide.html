@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-Hant"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05-rls-security-guide | Loot Drop 分析</title>
+<style>
+:root { --bg:#0d0f14; --panel:#161a23; --fg:#e6e6e6; --muted:#9aa4b2;
+        --accent:#ff5470; --accent2:#4dd0e1; --border:#2a3140; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang TC","Microsoft JhengHei",sans-serif;
+       line-height:1.7; }
+.wrap { max-width:860px; margin:0 auto; padding:2rem 1.5rem 5rem; }
+nav.top { position:sticky; top:0; background:rgba(13,15,20,.92); backdrop-filter:blur(8px);
+          border-bottom:1px solid var(--border); padding:.8rem 1.5rem; display:flex;
+          gap:1.2rem; flex-wrap:wrap; align-items:center; z-index:10; }
+nav.top a { color:var(--muted); text-decoration:none; font-size:.9rem; }
+nav.top a:hover { color:var(--accent); }
+nav.top .brand { color:var(--fg); font-weight:700; margin-right:auto; }
+h1,h2,h3 { line-height:1.3; }
+h1 { color:#fff; border-bottom:2px solid var(--accent); padding-bottom:.3rem; }
+h2 { color:var(--accent2); margin-top:2.2rem; border-bottom:1px solid var(--border); padding-bottom:.2rem; }
+h3 { color:#fff; }
+a { color:var(--accent2); }
+code { background:#0a0c10; padding:.15em .4em; border-radius:4px; font-size:.88em; color:#ffb3c0; }
+pre { background:#0a0c10; border:1px solid var(--border); border-radius:8px; padding:1rem;
+      overflow-x:auto; line-height:1.45; }
+pre code { background:none; padding:0; color:#cdd3dd; }
+table { border-collapse:collapse; width:100%; margin:1rem 0; font-size:.92rem; }
+th,td { border:1px solid var(--border); padding:.5rem .7rem; text-align:left; }
+th { background:var(--panel); color:#fff; }
+tr:nth-child(even) td { background:rgba(255,255,255,.02); }
+blockquote { border-left:3px solid var(--accent); margin:1rem 0; padding:.4rem 1rem;
+             background:var(--panel); color:var(--muted); border-radius:0 6px 6px 0; }
+.card { background:var(--panel); border:1px solid var(--border); border-radius:10px;
+        padding:1.2rem 1.4rem; margin:1rem 0; transition:border-color .2s; }
+.card:hover { border-color:var(--accent); }
+.card a { text-decoration:none; color:#fff; font-weight:600; font-size:1.05rem; }
+.card p { color:var(--muted); margin:.4rem 0 0; font-size:.9rem; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:1rem; }
+.stat-row { display:flex; gap:1rem; flex-wrap:wrap; margin:1.5rem 0; }
+.stat { background:var(--panel); border:1px solid var(--border); border-radius:10px;
+        padding:1rem 1.4rem; flex:1; min-width:140px; }
+.stat .v { font-size:1.8rem; font-weight:800; color:var(--accent); }
+.stat .l { color:var(--muted); font-size:.82rem; margin-top:.2rem; }
+.disclaimer { color:var(--muted); font-size:.82rem; border-top:1px solid var(--border);
+              margin-top:3rem; padding-top:1rem; }
+footer { color:var(--muted); font-size:.82rem; text-align:center; margin-top:3rem; }
+</style>
+</head><body>
+
+<nav class="top">
+  <a class="brand" href="index.html">🪦 Loot Drop 分析</a>
+  <a href="index.html">首頁</a>
+  <a href="notebook.html">互動分析</a>
+  <a href="it-sector-deep-dive.html">IT 產業報告</a>
+  <a href="01-site-overview.html">網站導覽</a>
+  <a href="02-supabase-discovery.html">Supabase 發現</a>
+  <a href="03-data-findings.html">資料發現</a>
+  <a href="06-tech-stack-choice.html">技術選型</a>
+</nav>
+
+<div class="wrap">
+<h1 id="05-rls-vs">05 — RLS 安全指南:免費展示 vs 付費內容的正確隔離</h1>
+<blockquote>
+<p><strong>定位:通用教學,非針對 Loot Drop 的指控。</strong>
+經實證,Loot Drop 全站內容免費、無 paywall,<strong>未發現安全漏洞</strong>(見 <code>02</code>)。
+本文是「<strong>假如</strong>你要做一個『有付費內容』的 Supabase 產品,該怎麼設 RLS」的一般性參考。</p>
+</blockquote>
+<h2 id="_1">核心原則</h2>
+<blockquote>
+<p><strong>anon key 一定會公開</strong>,所以<strong>絕對不能把『不該被匿名讀到的資料』放進
+anon 角色 RLS policy 允許的範圍</strong>。保護必須在<strong>資料庫層</strong>,不能靠前端隱藏。</p>
+</blockquote>
+<p>(註:Loot Drop 因內容全免費,不存在「不該被匿名讀到的資料」,故無此問題。
+以下為「<strong>若有</strong>付費內容」的通用做法。)</p>
+<hr />
+<h2 id="a">方案 A:欄位切分到不同表(推薦,最簡單清晰)</h2>
+<p>把免費預覽與付費正文拆成兩張表,RLS 分別設。</p>
+<pre><code class="language-sql">-- 免費預覽表:anon 可讀
+create table startups_public (
+  id            bigint primary key,
+  name          text,
+  sector        text,
+  country       text,
+  total_funding numeric,
+  condensed_value_prop text,   -- 只放「鉤子」摘要
+  primary_cause_of_death text
+);
+
+-- 付費正文表:anon 不可讀
+create table startups_premium (
+  id              bigint primary key references startups_public(id),
+  the_loot        jsonb,
+  market_analysis text,
+  pivot_idea      jsonb
+);
+
+-- 開啟 RLS(預設拒絕一切)
+alter table startups_public  enable row level security;
+alter table startups_premium enable row level security;
+
+-- 公開表:任何人可讀
+create policy &quot;public read&quot;
+  on startups_public for select
+  to anon, authenticated
+  using (true);
+
+-- 付費表:只有「已付費」的登入使用者可讀
+create policy &quot;paid users read&quot;
+  on startups_premium for select
+  to authenticated
+  using (
+    exists (
+      select 1 from subscriptions s
+      where s.user_id = auth.uid()
+        and s.status = 'active'
+    )
+  );
+-- 注意:沒有給 anon 任何 policy → anon 一律讀不到 premium
+</code></pre>
+<p>前端:免費頁查 <code>startups_public</code>;付費頁(登入後)查 <code>startups_premium</code>。
+匿名 <code>curl</code> 打 <code>startups_premium</code> 只會回空陣列。</p>
+<hr />
+<h2 id="b-viewrpc">方案 B:同表 + 用 View/RPC 控制欄位曝光</h2>
+<p>保留單表,但<strong>不開放 anon 直接 <code>select *</code></strong>,改走一個只回安全欄位的 View 或
+<code>security definer</code> RPC。</p>
+<pre><code class="language-sql">alter table startups enable row level security;
+-- 不給 anon 對 startups 的 select policy(直接查表 = 空)
+
+-- 對外只暴露安全欄位的 view
+create view startups_preview as
+  select id, name, sector, country, total_funding,
+         condensed_value_prop, primary_cause_of_death
+  from startups;
+
+-- 或用 RPC,登入且付費才回完整內容
+create or replace function get_startup_full(p_id bigint)
+returns setof startups
+language sql security definer
+as $$
+  select * from startups
+  where id = p_id
+    and exists (
+      select 1 from subscriptions
+      where user_id = auth.uid() and status = 'active'
+    );
+$$;
+</code></pre>
+<blockquote>
+<p>⚠️ 用 <code>security definer</code> 時要特別小心,函式內務必自己檢查 <code>auth.uid()</code> 與付費狀態,
+否則等於繞過 RLS 開後門。</p>
+</blockquote>
+<hr />
+<h2 id="c-supabase">方案 C:付費內容根本不放 Supabase,走自己的後端</h2>
+<p>最保守:Supabase 只存免費資料;付費正文由你自己的 server(帶金流驗證)發。
+適合內容是核心資產、不容任何洩漏的產品。代價是要自己維運一層 API。</p>
+<hr />
+<h2 id="_2">通用檢查清單</h2>
+<ul>
+<li>[ ] <strong>每張表都 <code>enable row level security</code></strong>(Supabase 建表預設不開!)</li>
+<li>[ ] anon 角色只在「確定要公開」的表/欄位上有 <code>select</code> policy</li>
+<li>[ ] 付費/私密內容要嘛分表、要嘛走 RPC,<strong>絕不讓 anon 直接 <code>select *</code></strong></li>
+<li>[ ] 寫入端點(如 <code>site_requests</code>)限制 <code>insert</code> 且驗證內容,避免被灌垃圾</li>
+<li>[ ] 用「匿名 curl」自己滲透測試:
+      <code>bash
+      curl "$URL/rest/v1/&lt;每張表&gt;?select=*&amp;limit=1" \
+        -H "apikey: $ANON" -H "Authorization: Bearer $ANON"</code>
+      凡是「不該匿名看到卻回了資料」的,就是漏洞。</li>
+<li>[ ] 分頁不是保護 — <code>Range</code> header 能撈穿,別以為「預設只回 1000 筆」擋得住爬蟲。</li>
+</ul>
+<hr />
+<h2 id="_3">一句話總結</h2>
+<blockquote>
+<p><strong>公開 key + 嚴格 RLS = 安全;公開 key + RLS 全開 = 把資料庫掛在公網。</strong>
+後者只有在「資料本來就要公開」時才沒問題 —— Loot Drop 正屬此例(全免費),
+故無虞。但<strong>若你的產品有任何付費/私密內容</strong>,務必用上面任一方案把它隔離出
+anon 的可讀範圍。</p>
+</blockquote>
+<footer>由 loot-drop.io 公開資料分析產生 · 內容為 AI 生成彙整,僅供研究</footer>
+</div>
+</body></html>

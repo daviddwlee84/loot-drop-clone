@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="zh-Hant"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02-supabase-discovery | Loot Drop 分析</title>
+<style>
+:root { --bg:#0d0f14; --panel:#161a23; --fg:#e6e6e6; --muted:#9aa4b2;
+        --accent:#ff5470; --accent2:#4dd0e1; --border:#2a3140; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang TC","Microsoft JhengHei",sans-serif;
+       line-height:1.7; }
+.wrap { max-width:860px; margin:0 auto; padding:2rem 1.5rem 5rem; }
+nav.top { position:sticky; top:0; background:rgba(13,15,20,.92); backdrop-filter:blur(8px);
+          border-bottom:1px solid var(--border); padding:.8rem 1.5rem; display:flex;
+          gap:1.2rem; flex-wrap:wrap; align-items:center; z-index:10; }
+nav.top a { color:var(--muted); text-decoration:none; font-size:.9rem; }
+nav.top a:hover { color:var(--accent); }
+nav.top .brand { color:var(--fg); font-weight:700; margin-right:auto; }
+h1,h2,h3 { line-height:1.3; }
+h1 { color:#fff; border-bottom:2px solid var(--accent); padding-bottom:.3rem; }
+h2 { color:var(--accent2); margin-top:2.2rem; border-bottom:1px solid var(--border); padding-bottom:.2rem; }
+h3 { color:#fff; }
+a { color:var(--accent2); }
+code { background:#0a0c10; padding:.15em .4em; border-radius:4px; font-size:.88em; color:#ffb3c0; }
+pre { background:#0a0c10; border:1px solid var(--border); border-radius:8px; padding:1rem;
+      overflow-x:auto; line-height:1.45; }
+pre code { background:none; padding:0; color:#cdd3dd; }
+table { border-collapse:collapse; width:100%; margin:1rem 0; font-size:.92rem; }
+th,td { border:1px solid var(--border); padding:.5rem .7rem; text-align:left; }
+th { background:var(--panel); color:#fff; }
+tr:nth-child(even) td { background:rgba(255,255,255,.02); }
+blockquote { border-left:3px solid var(--accent); margin:1rem 0; padding:.4rem 1rem;
+             background:var(--panel); color:var(--muted); border-radius:0 6px 6px 0; }
+.card { background:var(--panel); border:1px solid var(--border); border-radius:10px;
+        padding:1.2rem 1.4rem; margin:1rem 0; transition:border-color .2s; }
+.card:hover { border-color:var(--accent); }
+.card a { text-decoration:none; color:#fff; font-weight:600; font-size:1.05rem; }
+.card p { color:var(--muted); margin:.4rem 0 0; font-size:.9rem; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:1rem; }
+.stat-row { display:flex; gap:1rem; flex-wrap:wrap; margin:1.5rem 0; }
+.stat { background:var(--panel); border:1px solid var(--border); border-radius:10px;
+        padding:1rem 1.4rem; flex:1; min-width:140px; }
+.stat .v { font-size:1.8rem; font-weight:800; color:var(--accent); }
+.stat .l { color:var(--muted); font-size:.82rem; margin-top:.2rem; }
+.disclaimer { color:var(--muted); font-size:.82rem; border-top:1px solid var(--border);
+              margin-top:3rem; padding-top:1rem; }
+footer { color:var(--muted); font-size:.82rem; text-align:center; margin-top:3rem; }
+</style>
+</head><body>
+
+<nav class="top">
+  <a class="brand" href="index.html">🪦 Loot Drop 分析</a>
+  <a href="index.html">首頁</a>
+  <a href="notebook.html">互動分析</a>
+  <a href="it-sector-deep-dive.html">IT 產業報告</a>
+  <a href="01-site-overview.html">網站導覽</a>
+  <a href="02-supabase-discovery.html">Supabase 發現</a>
+  <a href="03-data-findings.html">資料發現</a>
+  <a href="06-tech-stack-choice.html">技術選型</a>
+</nav>
+
+<div class="wrap">
+<h1 id="02-supabase">02 — Supabase 逆向發現與安全分析</h1>
+<blockquote>
+<p>探查日期:2026-06-30 · 方法:讀取前端打包 JS + 直接呼叫其公開 API</p>
+</blockquote>
+<h2 id="tldr">TL;DR</h2>
+<ol>
+<li><strong>能看出它用 Supabase</strong> → 跟 key 外洩無關,是 client-side 架構的固有透明性。</li>
+<li><strong>anon key 出現在前端</strong> → <strong>正常設計</strong>,Supabase 本就要你公開它。</li>
+<li><strong>anon 可讀到 <code>startups</code> 全部欄位(含 the_loot/market_analysis/pivot_idea)</strong> →
+   <strong>不是漏洞</strong>。經實證,Loot Drop 全站內容免費、無 paywall/登入/金流(見第三節),
+   所以這些欄位本來就該對匿名訪客公開,行為符合設計。</li>
+</ol>
+<blockquote>
+<p>⚠️ <strong>更正紀錄</strong>:本文初版曾把上述行為定性為「付費內容裸奔的安全漏洞」。
+那是基於「Rebuild Plans 是付費產品」的<strong>錯誤假設</strong>。後續實證(前端無任何
+paywall/auth/金流邏輯)推翻了該假設,定性已更正為「公開資料、行為正常」。
+保留此更正紀錄,作為「先驗證再下定性」的提醒。</p>
+</blockquote>
+<hr />
+<h2 id="_1">一、怎麼逆向出來的</h2>
+<p>前端首頁 HTML 直接引用了這些打包資產:</p>
+<pre><code>/assets/supabaseClient-CuYTLnyz.js   ← 關鍵
+/assets/top10data-bqRFPz5T.js
+/assets/main-C7mngnWC.js
+</code></pre>
+<p><code>supabaseClient-*.js</code> 是 <code>@supabase/supabase-js</code> v2.90.1 的打包輸出,檔尾明文寫死:</p>
+<pre><code class="language-js">const Sn = &quot;https://lentxykytbylpxytluic.supabase.co&quot;,
+      kn = &quot;sb_publishable_W5UgIXv8SGHeo43duatMCw_0h8GbgCY&quot;,
+      ue = mn(Sn, kn);   // createClient(url, anonKey)
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Supabase URL</td>
+<td><code>https://lentxykytbylpxytluic.supabase.co</code></td>
+</tr>
+<tr>
+<td>Project Ref</td>
+<td><code>lentxykytbylpxytluic</code></td>
+</tr>
+<tr>
+<td>anon / publishable key</td>
+<td><code>sb_publishable_W5UgIXv8SGHeo43duatMCw_0h8GbgCY</code></td>
+</tr>
+</tbody>
+</table>
+<p>同一支檔案還洩漏了完整資料存取邏輯:表名、RPC 名、欄位、甚至前端的快取(<code>sessionStorage</code>, TTL 5 分鐘)與簡易 rate-limit(2 秒 5 次)。</p>
+<h3 id="js">資料存取面(從 JS 還原)</h3>
+<table>
+<thead>
+<tr>
+<th>類型</th>
+<th>名稱</th>
+<th>回傳</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Table</td>
+<td><code>startups</code></td>
+<td>主表,<strong>含全部付費欄位</strong></td>
+</tr>
+<tr>
+<td>Table</td>
+<td><code>dashboard_analytics</code></td>
+<td>NLP 分析(bottleneck/value-prop/landscape 座標)</td>
+</tr>
+<tr>
+<td>Table</td>
+<td><code>site_requests</code></td>
+<td>使用者提交的「補檔/功能請求」(只 insert)</td>
+</tr>
+<tr>
+<td>RPC</td>
+<td><code>get_total_burned</code></td>
+<td>總燒掉資金</td>
+</tr>
+<tr>
+<td>RPC</td>
+<td><code>get_startup_by_id(p_id)</code></td>
+<td>單一公司完整資料</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="anon-key">二、為什麼「anon key 在前端」是正常的</h2>
+<p>這是最常見的誤解,必須講清楚:</p>
+<ul>
+<li>Supabase 的安全模型 = <strong>公開的 anon key + 資料庫層的 Row-Level Security (RLS)</strong>。</li>
+<li>anon key <strong>不是密鑰</strong>,它只是「我是哪個專案、我是匿名訪客」的識別證,等同於
+  前端放 Google Maps API key。官方文件明確說它可公開。</li>
+<li>真正把關的是 <strong>RLS policy</strong>:每張表要定義「anon 角色能讀/寫哪些列」。</li>
+</ul>
+<blockquote>
+<p>所以「key 在前端」本身 0 問題。問題永遠在 <strong>RLS 有沒有做對</strong>。</p>
+</blockquote>
+<h3 id="_2">「能逆向 = 漏洞」嗎?不是</h3>
+<p>任何 <strong>client-side 直連資料庫</strong> 的架構(Supabase / Firebase / 任何 BaaS),
+打包後的 JS 與瀏覽器 Network 分頁必然暴露:後端網址、API 路徑(<code>rest/v1</code>、<code>auth/v1</code>)、
+表名、查詢結構。這是架構選型的<strong>固有性質</strong>,不分免費版或付費版、自架或雲端。
+要「不透明」就得在前端與 DB 之間加一層自己的後端 API。</p>
+<hr />
+<h2 id="_3">三、資料公開性評估:符合設計(初版誤判已更正)</h2>
+<h3 id="_4">觀察到的行為</h3>
+<p><code>startups</code> 一張表用 anon key <code>select=*</code> 即回傳所有欄位,包含內容最豐富的:</p>
+<pre><code class="language-bash">SUPA=&quot;https://lentxykytbylpxytluic.supabase.co&quot;
+KEY=&quot;sb_publishable_W5UgIXv8SGHeo43duatMCw_0h8GbgCY&quot;
+
+curl -s &quot;$SUPA/rest/v1/startups?select=name,the_loot,market_analysis,pivot_idea&amp;limit=5&quot; \
+  -H &quot;apikey: $KEY&quot; -H &quot;Authorization: Bearer $KEY&quot;
+</code></pre>
+<p>回傳:
+- <code>the_loot</code> — 結構化教訓陣列(平均 5.4 條/家)
+- <code>market_analysis</code> — 數百字市場分析長文
+- <code>pivot_idea</code> — 結構化 JSON,含 GTM 進入策略
+- <code>founders</code> / <code>investors</code> — 完整名單</p>
+<h3 id="_5">為什麼這「不是」漏洞</h3>
+<p>要構成「付費內容外洩」漏洞,前提是這些內容<strong>本該收費或需登入才能看</strong>。
+經實證,<strong>前提不成立</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>驗證項</th>
+<th>結果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>前端是否有 paywall / 訂閱牆</td>
+<td>❌ 無(<code>rebuilds</code> 等頁面 JS 內零權限邏輯)</td>
+</tr>
+<tr>
+<td>是否有登入 / auth 流程</td>
+<td>❌ 無(<code>signInWith*</code> 僅 Supabase SDK 內建庫碼,本站未調用)</td>
+</tr>
+<tr>
+<td>是否有金流(Stripe/checkout)</td>
+<td>❌ 無(<code>faq.html</code> 出現 "Stripe/pricing" 是<strong>內容文案</strong>在分析創業定價失敗,非自身金流)</td>
+</tr>
+<tr>
+<td><code>/rebuilds</code> 實際瀏覽</td>
+<td>直接可讀,免費免登入</td>
+</tr>
+</tbody>
+</table>
+<p>→ 既然全站內容<strong>本來就免費公開</strong>,那麼 anon 讀得到 <code>startups</code> 全欄位就是
+<strong>完全符合預期的設計</strong>,行為正常,不構成資料外洩。</p>
+<blockquote>
+<p><strong>沒有獨立的 <code>rebuilds</code>/<code>plans</code> 表</strong>(GET 皆 404),Rebuild Plans 就是前端直接讀
+<code>startups</code> 表組裝的。對「免費公開」的產品而言,這是合理且常見的單表設計。</p>
+</blockquote>
+<h3 id="_6">初版誤判的覆盤(留作教訓)</h3>
+<p>本文初版把上述行為寫成「付費內容裸奔的安全漏洞」。錯誤鏈是:</p>
+<ol>
+<li>看到 "Rebuild Plans v2.0 新功能"、商業模式像 SaaS → <strong>假設</strong>它是付費產品;</li>
+<li>在「付費」假設下,anon 能讀全欄位 → 推導成「漏洞」;</li>
+<li><strong>跳過了「先確認它到底收不收費」這一步</strong>。</li>
+</ol>
+<p>使用者實際點 <code>/rebuilds</code> 發現免費可讀,促使回頭做前端取證,才推翻假設。
+<strong>教訓:資安定性必須建立在實證上,不能從商業模式腦補。</strong></p>
+<hr />
+<h2 id="_7">四、定性結論</h2>
+<table>
+<thead>
+<tr>
+<th>觀察</th>
+<th>性質</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>看得出是 Supabase</td>
+<td>⚪ 中性(架構固有透明)</td>
+</tr>
+<tr>
+<td>anon key 在前端</td>
+<td>✅ 正常設計</td>
+</tr>
+<tr>
+<td>公開資料 anon 可讀(含 the_loot/pivot_idea)</td>
+<td>✅ 合理 — 全站本就免費公開</td>
+</tr>
+<tr>
+<td>1000 筆分頁可被 Range header 繞過</td>
+<td>⚪ 非保護機制,只是 PostgREST 預設分頁</td>
+</tr>
+<tr>
+<td><strong>整體</strong></td>
+<td><strong>未發現安全漏洞;行為符合「免費公開資料庫」的設計</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="_8">唯一仍可討論的點:有沒有「想保護卻沒保護」的東西?</h3>
+<p>由於全站免費,目前<strong>找不到任何「應受保護卻外洩」的資料</strong>,故無漏洞。
+要說有改進空間,僅在於通用最佳實務(與本站是否「出事」無關):</p>
+<ul>
+<li><code>site_requests</code> 這類<strong>寫入</strong>端點應確認有 RLS 限制(僅允許 <code>insert</code>、擋讀取與灌垃圾)。</li>
+<li>若<strong>未來</strong>要對部分內容收費,屆時才需要做免費/付費隔離(做法見 <code>05-rls-security-guide.md</code>,
+  該文現定位為「通用教學」,而非指控本站有漏洞)。</li>
+</ul>
+<h3 id="vibe-coder">「是不懂技術的 vibe coder 嗎?」</h3>
+<p><strong>無從也無需如此判斷。</strong> 既然沒有安全問題,單表存放公開資料 + anon 直讀是
+<strong>簡潔合理</strong>的架構選擇,反而看不出任何業餘痕跡。先前以此推論「RLS 全開的疏失」
+同樣是建立在錯誤的「付費」前提上,一併撤回。</p>
+<hr />
+<h2 id="_9">五、本次取證的「客氣」程度說明</h2>
+<ul>
+<li>僅使用其<strong>公開</strong>的 anon key 與<strong>公開</strong>端點,無破解、無提權、無寫入。</li>
+<li>主表用 <code>Range</code> 分頁 2 次請求完成(未逐筆打 1749 次 RPC),對其伺服器負載最小。</li>
+<li>爬蟲內建 <code>time.sleep(0.3)</code> 節流。</li>
+<li>資料僅作本地分析與安全研究用途,未再散布。</li>
+</ul>
+<footer>由 loot-drop.io 公開資料分析產生 · 內容為 AI 生成彙整,僅供研究</footer>
+</div>
+</body></html>

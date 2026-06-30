@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="zh-Hant"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01-site-overview | Loot Drop 分析</title>
+<style>
+:root { --bg:#0d0f14; --panel:#161a23; --fg:#e6e6e6; --muted:#9aa4b2;
+        --accent:#ff5470; --accent2:#4dd0e1; --border:#2a3140; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang TC","Microsoft JhengHei",sans-serif;
+       line-height:1.7; }
+.wrap { max-width:860px; margin:0 auto; padding:2rem 1.5rem 5rem; }
+nav.top { position:sticky; top:0; background:rgba(13,15,20,.92); backdrop-filter:blur(8px);
+          border-bottom:1px solid var(--border); padding:.8rem 1.5rem; display:flex;
+          gap:1.2rem; flex-wrap:wrap; align-items:center; z-index:10; }
+nav.top a { color:var(--muted); text-decoration:none; font-size:.9rem; }
+nav.top a:hover { color:var(--accent); }
+nav.top .brand { color:var(--fg); font-weight:700; margin-right:auto; }
+h1,h2,h3 { line-height:1.3; }
+h1 { color:#fff; border-bottom:2px solid var(--accent); padding-bottom:.3rem; }
+h2 { color:var(--accent2); margin-top:2.2rem; border-bottom:1px solid var(--border); padding-bottom:.2rem; }
+h3 { color:#fff; }
+a { color:var(--accent2); }
+code { background:#0a0c10; padding:.15em .4em; border-radius:4px; font-size:.88em; color:#ffb3c0; }
+pre { background:#0a0c10; border:1px solid var(--border); border-radius:8px; padding:1rem;
+      overflow-x:auto; line-height:1.45; }
+pre code { background:none; padding:0; color:#cdd3dd; }
+table { border-collapse:collapse; width:100%; margin:1rem 0; font-size:.92rem; }
+th,td { border:1px solid var(--border); padding:.5rem .7rem; text-align:left; }
+th { background:var(--panel); color:#fff; }
+tr:nth-child(even) td { background:rgba(255,255,255,.02); }
+blockquote { border-left:3px solid var(--accent); margin:1rem 0; padding:.4rem 1rem;
+             background:var(--panel); color:var(--muted); border-radius:0 6px 6px 0; }
+.card { background:var(--panel); border:1px solid var(--border); border-radius:10px;
+        padding:1.2rem 1.4rem; margin:1rem 0; transition:border-color .2s; }
+.card:hover { border-color:var(--accent); }
+.card a { text-decoration:none; color:#fff; font-weight:600; font-size:1.05rem; }
+.card p { color:var(--muted); margin:.4rem 0 0; font-size:.9rem; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:1rem; }
+.stat-row { display:flex; gap:1rem; flex-wrap:wrap; margin:1.5rem 0; }
+.stat { background:var(--panel); border:1px solid var(--border); border-radius:10px;
+        padding:1rem 1.4rem; flex:1; min-width:140px; }
+.stat .v { font-size:1.8rem; font-weight:800; color:var(--accent); }
+.stat .l { color:var(--muted); font-size:.82rem; margin-top:.2rem; }
+.disclaimer { color:var(--muted); font-size:.82rem; border-top:1px solid var(--border);
+              margin-top:3rem; padding-top:1rem; }
+footer { color:var(--muted); font-size:.82rem; text-align:center; margin-top:3rem; }
+</style>
+</head><body>
+
+<nav class="top">
+  <a class="brand" href="index.html">🪦 Loot Drop 分析</a>
+  <a href="index.html">首頁</a>
+  <a href="notebook.html">互動分析</a>
+  <a href="it-sector-deep-dive.html">IT 產業報告</a>
+  <a href="01-site-overview.html">網站導覽</a>
+  <a href="02-supabase-discovery.html">Supabase 發現</a>
+  <a href="03-data-findings.html">資料發現</a>
+  <a href="06-tech-stack-choice.html">技術選型</a>
+</nav>
+
+<div class="wrap">
+<h1 id="01-loot-drop">01 — 網站內容導覽:Loot Drop「創業墳場」</h1>
+<blockquote>
+<p>來源:<a href="https://www.loot-drop.io/">https://www.loot-drop.io/</a> · 探查日期:2026-06-30</p>
+</blockquote>
+<h2 id="_1">它是什麼</h2>
+<p>一個以「<strong>遊戲掉寶(loot)+ 墳場(graveyard)</strong>」黑色幽默風格包裝的<strong>失敗創業案例資料庫</strong>。
+核心主張不是看熱鬧,而是:每一家倒閉公司都留下了「<strong>市場缺口 + 已驗證需求 + 慘痛教訓</strong>」,
+網站把這些轉成<strong>可執行的重建藍圖(Rebuild Plans)</strong>。</p>
+<blockquote>
+<p>⚠️ 全站內容由其自述為 <strong>AI 生成</strong>的公開資料分析,附免責聲明:屬「模式與觀點」、
+非經驗證之事實,可能含 AI 幻覺。</p>
+</blockquote>
+<h2 id="vs">對外宣稱 vs 實際資料</h2>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>首頁宣稱</th>
+<th>資料庫實際(爬取結果)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>收錄公司數</td>
+<td>~1209 / 1670</td>
+<td><strong>1749 筆</strong></td>
+</tr>
+<tr>
+<td>燒掉資金</td>
+<td>標示為動態</td>
+<td><strong>約 $5354 億美元</strong>(<code>get_total_burned</code> RPC)</td>
+</tr>
+<tr>
+<td>更新頻率</td>
+<td>每週二、五新增</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h2 id="_2">功能地圖</h2>
+<table>
+<thead>
+<tr>
+<th>頁面</th>
+<th>路徑</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>首頁墳場</td>
+<td><code>/</code></td>
+<td>搜尋 + 篩選全部案例,動態統計</td>
+</tr>
+<tr>
+<td>Learning Framework</td>
+<td><code>/why-they-fail</code></td>
+<td><strong>7 種失敗反模式(antipatterns)</strong> + 互動式「風險掃描器」自測 7 題</td>
+</tr>
+<tr>
+<td>Deep Dives</td>
+<td><code>/deep-dives</code></td>
+<td><strong>22 種產品類別</strong>各自的「失敗特徵」</td>
+</tr>
+<tr>
+<td>Rebuild Plans ★</td>
+<td><code>/rebuilds</code></td>
+<td><strong>招牌功能</strong>(免費):1670+ 個可執行重建計畫</td>
+</tr>
+<tr>
+<td>Top 10 Lists</td>
+<td><code>/lists.html</code></td>
+<td>29 個「死亡榜單」(SaaS、消費…)</td>
+</tr>
+<tr>
+<td>Insights / Dashboard</td>
+<td><code>/insights.html</code> <code>/dashboard.html</code></td>
+<td>互動式鑑識數據儀表板</td>
+</tr>
+<tr>
+<td>Database View</td>
+<td><code>/database-view</code></td>
+<td>完整資料庫檢視</td>
+</tr>
+<tr>
+<td>Ideas</td>
+<td><code>/ideas.html</code></td>
+<td>1000+ 創業點子</td>
+</tr>
+</tbody>
+</table>
+<h3 id="rebuild-plan-5">Rebuild Plan 的結構(每個計畫 5 段)</h3>
+<ol>
+<li><strong>What to Build</strong> — 要做什麼</li>
+<li><strong>Market Analysis</strong> — 市場分析(對應 DB 的 <code>market_analysis</code> 長文)</li>
+<li><strong>Build Steps</strong> — 建構步驟</li>
+<li><strong>Tech Stack</strong> — 技術棧</li>
+<li><strong>Revenue Model</strong> — 營收模式(對應 DB 的 <code>pivot_idea</code>,結構化 JSON 含 GTM)</li>
+</ol>
+<h2 id="_3">技術棧(從前端可觀察)</h2>
+<ul>
+<li><strong>前端</strong>:Vite 打包的 SPA(資產檔名帶 hash,如 <code>main-C7mngnWC.js</code>)</li>
+<li><strong>內容渲染</strong>:client-side 動態載入 — 直接用 HTTP 抓 HTML 只會拿到「Loading…」骨架</li>
+<li><strong>後端</strong>:<strong>Supabase</strong>(PostgreSQL + PostgREST + GoTrue),詳見 <code>02-supabase-discovery.md</code></li>
+</ul>
+<blockquote>
+<p>因為是純 client-side 直連資料庫,<strong>所有資料與 API 結構對使用者天生透明</strong>。
+這不是漏洞,是這類架構的固有性質(見下一份文件對「透明 ≠ 漏洞」的釐清)。</p>
+</blockquote>
+<footer>由 loot-drop.io 公開資料分析產生 · 內容為 AI 生成彙整,僅供研究</footer>
+</div>
+</body></html>

@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="zh-Hant"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06-tech-stack-choice | Loot Drop 分析</title>
+<style>
+:root { --bg:#0d0f14; --panel:#161a23; --fg:#e6e6e6; --muted:#9aa4b2;
+        --accent:#ff5470; --accent2:#4dd0e1; --border:#2a3140; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang TC","Microsoft JhengHei",sans-serif;
+       line-height:1.7; }
+.wrap { max-width:860px; margin:0 auto; padding:2rem 1.5rem 5rem; }
+nav.top { position:sticky; top:0; background:rgba(13,15,20,.92); backdrop-filter:blur(8px);
+          border-bottom:1px solid var(--border); padding:.8rem 1.5rem; display:flex;
+          gap:1.2rem; flex-wrap:wrap; align-items:center; z-index:10; }
+nav.top a { color:var(--muted); text-decoration:none; font-size:.9rem; }
+nav.top a:hover { color:var(--accent); }
+nav.top .brand { color:var(--fg); font-weight:700; margin-right:auto; }
+h1,h2,h3 { line-height:1.3; }
+h1 { color:#fff; border-bottom:2px solid var(--accent); padding-bottom:.3rem; }
+h2 { color:var(--accent2); margin-top:2.2rem; border-bottom:1px solid var(--border); padding-bottom:.2rem; }
+h3 { color:#fff; }
+a { color:var(--accent2); }
+code { background:#0a0c10; padding:.15em .4em; border-radius:4px; font-size:.88em; color:#ffb3c0; }
+pre { background:#0a0c10; border:1px solid var(--border); border-radius:8px; padding:1rem;
+      overflow-x:auto; line-height:1.45; }
+pre code { background:none; padding:0; color:#cdd3dd; }
+table { border-collapse:collapse; width:100%; margin:1rem 0; font-size:.92rem; }
+th,td { border:1px solid var(--border); padding:.5rem .7rem; text-align:left; }
+th { background:var(--panel); color:#fff; }
+tr:nth-child(even) td { background:rgba(255,255,255,.02); }
+blockquote { border-left:3px solid var(--accent); margin:1rem 0; padding:.4rem 1rem;
+             background:var(--panel); color:var(--muted); border-radius:0 6px 6px 0; }
+.card { background:var(--panel); border:1px solid var(--border); border-radius:10px;
+        padding:1.2rem 1.4rem; margin:1rem 0; transition:border-color .2s; }
+.card:hover { border-color:var(--accent); }
+.card a { text-decoration:none; color:#fff; font-weight:600; font-size:1.05rem; }
+.card p { color:var(--muted); margin:.4rem 0 0; font-size:.9rem; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:1rem; }
+.stat-row { display:flex; gap:1rem; flex-wrap:wrap; margin:1.5rem 0; }
+.stat { background:var(--panel); border:1px solid var(--border); border-radius:10px;
+        padding:1rem 1.4rem; flex:1; min-width:140px; }
+.stat .v { font-size:1.8rem; font-weight:800; color:var(--accent); }
+.stat .l { color:var(--muted); font-size:.82rem; margin-top:.2rem; }
+.disclaimer { color:var(--muted); font-size:.82rem; border-top:1px solid var(--border);
+              margin-top:3rem; padding-top:1rem; }
+footer { color:var(--muted); font-size:.82rem; text-align:center; margin-top:3rem; }
+</style>
+</head><body>
+
+<nav class="top">
+  <a class="brand" href="index.html">🪦 Loot Drop 分析</a>
+  <a href="index.html">首頁</a>
+  <a href="notebook.html">互動分析</a>
+  <a href="it-sector-deep-dive.html">IT 產業報告</a>
+  <a href="01-site-overview.html">網站導覽</a>
+  <a href="02-supabase-discovery.html">Supabase 發現</a>
+  <a href="03-data-findings.html">資料發現</a>
+  <a href="06-tech-stack-choice.html">技術選型</a>
+</nav>
+
+<div class="wrap">
+<h1 id="06-supabase-vs-db-auth">06 — 新創技術選型:Supabase vs 自架 DB + 第三方 Auth</h1>
+<blockquote>
+<p>起因:看完 Loot Drop 用 Supabase 後的延伸討論 ——
+「新創網站到底該用 Supabase,還是自架資料庫搭配第三方 Auth(Clerk/Auth0 等)?」</p>
+</blockquote>
+<h2 id="tldr">先講結論(TL;DR)</h2>
+<table>
+<thead>
+<tr>
+<th>你的情況</th>
+<th>建議</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>早期、要快、團隊小</strong></td>
+<td>✅ <strong>Supabase</strong>(DB + Auth + Storage 一站式,最省事)</td>
+</tr>
+<tr>
+<td><strong>Auth 需求複雜</strong>(企業 SSO、精細權限、合規)</td>
+<td>自架/託管 DB + <strong>專業 Auth(Clerk / Auth0 / WorkOS)</strong></td>
+</tr>
+<tr>
+<td><strong>已有後端團隊、想要掌控</strong></td>
+<td>託管 Postgres(Neon/RDS)+ 自寫 API + 第三方 Auth</td>
+</tr>
+<tr>
+<td><strong>純靜態 / 無使用者系統</strong></td>
+<td>兩者都不需要(像本 repo 的 snapshot,直接 GitHub Pages)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>對「大多數早期新創」</strong>:<strong>先用 Supabase</strong>。它把你最不該在早期浪費時間的東西(DB、Auth、即時、檔案)打包好,讓你專注做產品。等規模或 Auth 複雜度真的撞到天花板,再抽換——而且 Supabase 底層是標準 Postgres,遷移成本比想像低。</p>
+<hr />
+<h2 id="_1">兩種路線是什麼</h2>
+<h3 id="asupabasebaas">路線 A:Supabase(BaaS 一站式)</h3>
+<p>Postgres + 內建 Auth(email/OAuth/magic link)+ 即時訂閱 + Storage + 自動 REST/GraphQL API。
+前端用 anon key 直連,<strong>靠 RLS(Row-Level Security)在資料庫層控管權限</strong>。</p>
+<h3 id="b-db-auth">路線 B:自架/託管 DB + 第三方 Auth</h3>
+<p>自己準備資料庫(Neon、Supabase-as-just-DB、RDS、自架 Postgres),
+<strong>Auth 外包給專業服務</strong>(Clerk、Auth0、WorkOS、Firebase Auth),
+中間通常自己寫一層後端 API(Node/Go/Python…)。</p>
+<hr />
+<h2 id="_2">逐項比較</h2>
+<table>
+<thead>
+<tr>
+<th>面向</th>
+<th>Supabase</th>
+<th>自架 DB + 第三方 Auth</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>上手速度</strong></td>
+<td>⭐ 最快,幾小時有可用後端</td>
+<td>慢,要接 DB、寫 API、整合 Auth</td>
+</tr>
+<tr>
+<td><strong>Auth 功能深度</strong></td>
+<td>email/OAuth/magic link 夠用;企業 SSO/SCIM 較弱</td>
+<td>⭐ Clerk/Auth0/WorkOS 在這塊專業且完整</td>
+</tr>
+<tr>
+<td><strong>權限控管</strong></td>
+<td>RLS,強大但<strong>學習曲線陡、容易設錯</strong>(見 Loot Drop 案例註)</td>
+<td>在自己的 API 層寫,直覺但要自己負責周全</td>
+</tr>
+<tr>
+<td><strong>掌控度 / 客製</strong></td>
+<td>中(被平台抽象綁住一些)</td>
+<td>⭐ 高,想怎麼搭都行</td>
+</tr>
+<tr>
+<td><strong>維運負擔</strong></td>
+<td>⭐ 低(平台代管)</td>
+<td>高(DB 備份、擴展、Auth 整合都要顧)</td>
+</tr>
+<tr>
+<td><strong>成本(早期)</strong></td>
+<td>⭐ 免費額度大方,起步幾乎 $0</td>
+<td>Auth 服務多半按 MAU 計費,長大後可能變貴</td>
+</tr>
+<tr>
+<td><strong>成本(規模化)</strong></td>
+<td>用量大時可能比自架貴</td>
+<td>DB 自架可壓成本,但人力成本高</td>
+</tr>
+<tr>
+<td><strong>鎖定風險</strong></td>
+<td>底層是標準 Postgres,<strong>可遷移</strong>;但 Auth/RLS/Realtime 有平台味</td>
+<td>Auth 換供應商麻煩;DB 是標準的好遷</td>
+</tr>
+<tr>
+<td><strong>適合團隊</strong></td>
+<td>全端少數人、前端主導</td>
+<td>有後端工程能力的團隊</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="auth">關鍵:Auth 才是真正的決策點</h2>
+<p>DB 其實沒那麼難選(Postgres 託管服務都很成熟),<strong>真正分水嶺在 Auth 需求</strong>:</p>
+<ul>
+<li><strong>需求簡單</strong>(個人帳號、社群登入、忘記密碼)→ Supabase 內建 Auth 完全夠,沒理由多花錢接第三方。</li>
+<li><strong>需求複雜</strong>(企業客戶要 SAML/OIDC SSO、SCIM 自動佈建、多租戶精細權限、特定合規如 SOC2/HIPAA 的身分流程)→ 這正是 <strong>Clerk / Auth0 / WorkOS</strong> 存在的理由,Supabase Auth 會綁手綁腳。</li>
+</ul>
+<blockquote>
+<p>經驗法則:<strong>做 B2C 早期 → Supabase 全包;做 B2B 且客戶會要求 SSO → DB 歸 DB、Auth 用 WorkOS/Auth0。</strong></p>
+</blockquote>
+<hr />
+<h2 id="auth-db">把 Auth 和 DB 解耦,可不可以?可以,而且常見</h2>
+<p>一個務實的中間路線:<strong>Supabase 當資料庫,但 Auth 用 Clerk/Auth0</strong>。
+Supabase 支援第三方 JWT —— 你用 Clerk 登入拿到 JWT,Supabase 的 RLS 直接驗證該 JWT 的 claims。
+這樣同時拿到「Supabase 的好用 DB/RLS」+「Clerk 的強 Auth」。
+代價是兩個服務都要付費、整合也多一層。</p>
+<hr />
+<h2 id="loot-drop">對應 Loot Drop 的觀察(實例註)</h2>
+<p>Loot Drop 正是「<strong>Supabase 當公開資料庫、且不需要 Auth</strong>」的最簡用法:</p>
+<ul>
+<li>它<strong>沒有使用者系統</strong>(全站免費、無登入)→ 連 Auth 都不用,Supabase 只當「自帶 REST API 的 Postgres」。</li>
+<li>對「唯讀、公開內容」的產品,這是<strong>極省事且正確</strong>的選擇。</li>
+<li>⚠️ 但要記得:<strong>Supabase 的 anon key 公開 + RLS 全開,只有在『資料本來就要公開』時才安全。</strong>
+  一旦你有付費/私密內容,RLS 就必須做對(見 <code>05-rls-security-guide.md</code>)——
+  這是 Supabase 路線最容易出事的點。</li>
+</ul>
+<hr />
+<h2 id="_3">一句話總結</h2>
+<blockquote>
+<p><strong>早期新創、Auth 不複雜 → Supabase 全包,別想太多。</strong>
+<strong>Auth 會變複雜(尤其 B2B SSO)→ DB 用託管 Postgres、Auth 交給 Clerk/Auth0/WorkOS。</strong>
+DB 選型很安全(都能遷),<strong>真正要想清楚的是 Auth 的未來需求</strong>。</p>
+</blockquote>
+<footer>由 loot-drop.io 公開資料分析產生 · 內容為 AI 生成彙整,僅供研究</footer>
+</div>
+</body></html>

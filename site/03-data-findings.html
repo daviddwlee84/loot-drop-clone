@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="zh-Hant"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03-data-findings | Loot Drop 分析</title>
+<style>
+:root { --bg:#0d0f14; --panel:#161a23; --fg:#e6e6e6; --muted:#9aa4b2;
+        --accent:#ff5470; --accent2:#4dd0e1; --border:#2a3140; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang TC","Microsoft JhengHei",sans-serif;
+       line-height:1.7; }
+.wrap { max-width:860px; margin:0 auto; padding:2rem 1.5rem 5rem; }
+nav.top { position:sticky; top:0; background:rgba(13,15,20,.92); backdrop-filter:blur(8px);
+          border-bottom:1px solid var(--border); padding:.8rem 1.5rem; display:flex;
+          gap:1.2rem; flex-wrap:wrap; align-items:center; z-index:10; }
+nav.top a { color:var(--muted); text-decoration:none; font-size:.9rem; }
+nav.top a:hover { color:var(--accent); }
+nav.top .brand { color:var(--fg); font-weight:700; margin-right:auto; }
+h1,h2,h3 { line-height:1.3; }
+h1 { color:#fff; border-bottom:2px solid var(--accent); padding-bottom:.3rem; }
+h2 { color:var(--accent2); margin-top:2.2rem; border-bottom:1px solid var(--border); padding-bottom:.2rem; }
+h3 { color:#fff; }
+a { color:var(--accent2); }
+code { background:#0a0c10; padding:.15em .4em; border-radius:4px; font-size:.88em; color:#ffb3c0; }
+pre { background:#0a0c10; border:1px solid var(--border); border-radius:8px; padding:1rem;
+      overflow-x:auto; line-height:1.45; }
+pre code { background:none; padding:0; color:#cdd3dd; }
+table { border-collapse:collapse; width:100%; margin:1rem 0; font-size:.92rem; }
+th,td { border:1px solid var(--border); padding:.5rem .7rem; text-align:left; }
+th { background:var(--panel); color:#fff; }
+tr:nth-child(even) td { background:rgba(255,255,255,.02); }
+blockquote { border-left:3px solid var(--accent); margin:1rem 0; padding:.4rem 1rem;
+             background:var(--panel); color:var(--muted); border-radius:0 6px 6px 0; }
+.card { background:var(--panel); border:1px solid var(--border); border-radius:10px;
+        padding:1.2rem 1.4rem; margin:1rem 0; transition:border-color .2s; }
+.card:hover { border-color:var(--accent); }
+.card a { text-decoration:none; color:#fff; font-weight:600; font-size:1.05rem; }
+.card p { color:var(--muted); margin:.4rem 0 0; font-size:.9rem; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:1rem; }
+.stat-row { display:flex; gap:1rem; flex-wrap:wrap; margin:1.5rem 0; }
+.stat { background:var(--panel); border:1px solid var(--border); border-radius:10px;
+        padding:1rem 1.4rem; flex:1; min-width:140px; }
+.stat .v { font-size:1.8rem; font-weight:800; color:var(--accent); }
+.stat .l { color:var(--muted); font-size:.82rem; margin-top:.2rem; }
+.disclaimer { color:var(--muted); font-size:.82rem; border-top:1px solid var(--border);
+              margin-top:3rem; padding-top:1rem; }
+footer { color:var(--muted); font-size:.82rem; text-align:center; margin-top:3rem; }
+</style>
+</head><body>
+
+<nav class="top">
+  <a class="brand" href="index.html">🪦 Loot Drop 分析</a>
+  <a href="index.html">首頁</a>
+  <a href="notebook.html">互動分析</a>
+  <a href="it-sector-deep-dive.html">IT 產業報告</a>
+  <a href="01-site-overview.html">網站導覽</a>
+  <a href="02-supabase-discovery.html">Supabase 發現</a>
+  <a href="03-data-findings.html">資料發現</a>
+  <a href="06-tech-stack-choice.html">技術選型</a>
+</nav>
+
+<div class="wrap">
+<h1 id="03">03 — 資料分析發現</h1>
+<blockquote>
+<p>資料:<code>lootdrop.db</code>(startups 1749 筆 / analytics 596 筆)· 由 <code>analyze.py</code> 產生
+⚠️ 先讀 <code>04-data-quality-caveats.md</code> 了解三個資料陷阱再看數字。</p>
+</blockquote>
+<h2 id="_1">總覽</h2>
+<table>
+<thead>
+<tr>
+<th>指標</th>
+<th>數值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>收錄公司</td>
+<td><strong>1749 家</strong></td>
+</tr>
+<tr>
+<td>總燒掉資金</td>
+<td><strong>約 $5354 億美元</strong>($535,377,014,047)</td>
+</tr>
+<tr>
+<td>募資中位數</td>
+<td><strong>$500 萬</strong>(平均 $3.06 億 — 嚴重右偏)</td>
+</tr>
+<tr>
+<td>存活中位數</td>
+<td><strong>3 年</strong>(平均 5.2 年)</td>
+</tr>
+<tr>
+<td>死亡高峰</td>
+<td><strong>2024 年(203 家)</strong></td>
+</tr>
+<tr>
+<td>資料完整度</td>
+<td>the_loot/pivot_idea/views/funding 皆 100% 非空</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1-primary_cause_of_death">1. 死因排行(<code>primary_cause_of_death</code>)</h2>
+<pre><code>901  ██████████████████████████████████  Competition          ← 過半!
+269  ██████████                          Unit Economics
+205  ████████                            Ran Out of Cash
+203  ████████                            No Market Need
+ 86  ███                                 Legal/Regulatory
+ 70  ███                                 Product/Tech Failure
+ 13                                      Team/Founder Conflict
+</code></pre>
+<p><strong>超過一半被歸因於「競爭」。</strong> 但這個粗標籤會誤導 —— 見第 5 節的瓶頸細分。</p>
+<h2 id="2">2. 「競爭」的真相:燒得少、死得快</h2>
+<p>各死因的平均燒錢與平均壽命交叉後,故事完全變了:</p>
+<table>
+<thead>
+<tr>
+<th>死因</th>
+<th>數量</th>
+<th>平均燒($M)</th>
+<th>平均壽命</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ran Out of Cash</td>
+<td>205</td>
+<td><strong>1390.1</strong></td>
+<td>6.8y</td>
+</tr>
+<tr>
+<td>Legal/Regulatory</td>
+<td>86</td>
+<td>789.7</td>
+<td>8.1y</td>
+</tr>
+<tr>
+<td>Unit Economics</td>
+<td>269</td>
+<td>393.2</td>
+<td>6.9y</td>
+</tr>
+<tr>
+<td>Product/Tech Failure</td>
+<td>70</td>
+<td>224.9</td>
+<td>6.7y</td>
+</tr>
+<tr>
+<td>Team/Founder Conflict</td>
+<td>13</td>
+<td>193.2</td>
+<td>5.5y</td>
+</tr>
+<tr>
+<td>No Market Need</td>
+<td>203</td>
+<td>73.4</td>
+<td>4.4y</td>
+</tr>
+<tr>
+<td><strong>Competition</strong></td>
+<td><strong>901</strong></td>
+<td><strong>48.3</strong></td>
+<td><strong>4.5y</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>解讀</strong>:
+- 「競爭」死的公司平均只燒 $48M、活 4.5 年 → 多是<strong>小本、做了沒差異化的紅海題目</strong>,被同質對手/大廠輾過。
+- 真正的<strong>燒錢黑洞是「沒錢」($1390M)</strong> —— 募了巨資硬撐到資金鏈斷裂(WeWork、Northvolt、Byju's 那一掛)。
+- 一般人以為新創死於缺錢,但<strong>「缺錢」其實是撐最久、燒最兇的少數</strong>;多數是默默被競爭淘汰。</p>
+</blockquote>
+<h2 id="3-top-12biggest-burns">3. 最燒錢 Top 12(Biggest Burns)</h2>
+<table>
+<thead>
+<tr>
+<th>公司</th>
+<th>燒掉</th>
+<th>死因</th>
+<th>註</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Silicon Valley Bank</td>
+<td>$209B</td>
+<td>Ran Out of Cash</td>
+<td>⚠️ 是總資產非募資</td>
+</tr>
+<tr>
+<td>Wirecard</td>
+<td>$28B</td>
+<td>Legal/Regulatory</td>
+<td>金融詐欺</td>
+</tr>
+<tr>
+<td>WeWork</td>
+<td>$22B</td>
+<td>Unit Economics</td>
+<td>共享辦公,單位經濟崩壞</td>
+</tr>
+<tr>
+<td>Northvolt</td>
+<td>$15B</td>
+<td>Ran Out of Cash</td>
+<td>瑞典電池廠</td>
+</tr>
+<tr>
+<td>Ezubao</td>
+<td>$7.6B</td>
+<td>Legal/Regulatory</td>
+<td>P2P 龐氏</td>
+</tr>
+<tr>
+<td>Byju's</td>
+<td>$6B</td>
+<td>Ran Out of Cash</td>
+<td>印度教育獨角獸</td>
+</tr>
+<tr>
+<td>LeEco</td>
+<td>$6B</td>
+<td>Ran Out of Cash</td>
+<td>樂視</td>
+</tr>
+<tr>
+<td>WM Motor</td>
+<td>$5.8B</td>
+<td>Unit Economics</td>
+<td>威馬汽車</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4">4. 集中度:產業 / 國家</h2>
+<pre><code>產業          國家
+447 通訊服務   728 美國 ████████████████████████████
+417 消費       102 中國 ████
+408 IT          32 英國 █
+157 金融        29 印度 █
+146 工業        11 加拿大
+104 醫療         9 印尼 / 澳洲
+</code></pre>
+<p>美國壓倒性過半;中國第二(且 view 數最高的多是中國共享單車/教培題材)。</p>
+<hr />
+<h2 id="5-analytics-nlp">5. 智慧分析層(analytics 表的 NLP 分類)</h2>
+<blockquote>
+<p>僅覆蓋 596 / 1749 ≈ 34% 公司。這是它 dashboard 用、但介面沒明說的細分。</p>
+</blockquote>
+<h3 id="bottleneck_tag-cause_of_death">真正卡死的瓶頸(<code>bottleneck_tag</code>)— 比 cause_of_death 更精準</h3>
+<pre><code>318  ██████████████████████████████████  Outcompeted
+101  ███████████                         Unit Economics
+ 95  ██████████                          product-market fit
+ 26  ███                                 Regulation
+ 26  ███                                 Burn Rate
+ 23  ██                                  Product problems
+  6                                      Internal conflicts
+</code></pre>
+<h3 id="difficulty_category">難度類型(<code>difficulty_category</code>)</h3>
+<pre><code>221 Operational ████████████████████████████████  ← 死於「做不出來/做不順」
+208 Financial   ██████████████████████████████    ← 死於「算不過來/燒太兇」
+102 Technical
+ 36 Regulatory
+ 24 Behavioral
+</code></pre>
+<blockquote>
+<p>兩大死因類別其實是 <strong>營運執行</strong> 與 <strong>財務模型</strong>,技術反而排第三。
+「點子能不能做出來」遠不如「能不能營運 + 算得過來」致命。</p>
+</blockquote>
+<h3 id="value_prop_category">價值主張類型(<code>value_prop_category</code>)</h3>
+<pre><code>108 SaaS                          ████████████████████████████████
+ 91 Aggregation / Marketplace     █████████████████████████████
+ 52 P2P / Sharing                 ████████████████
+ 52 Content / Media               ████████████████
+ 41 Data / Intelligence Tools
+ 41 Automation / Optimization
+ 37 Financial Services
+</code></pre>
+<h3 id="normalized_problem">最擁擠的題目(<code>normalized_problem</code>)— 最多人做 = 最多人死</h3>
+<pre><code>31 協作/專案管理工具
+30 線上借貸與金融市集
+28 數位內容與社群互動
+23 內容創作多媒體平台
+21 社群媒體管理聚合 / 醫療診斷科技 / AI 物流
+20 即時通訊 / 隨需外送
+</code></pre>
+<blockquote>
+<p>這幾個是「最多墳墓」的絞肉機題材 — 若你要創業,進這些賽道前先看看這裡死了多少同行。</p>
+</blockquote>
+<hr />
+<h2 id="6-top-15-vc">6. 投資人「踩雷王」Top 15(投到最多倒閉公司的 VC)</h2>
+<blockquote>
+<p>投得多自然踩得多,不代表眼光差;但可看出最活躍的早期投資人。</p>
+</blockquote>
+<pre><code>336  ████████████████████████████  Y Combinator
+129  ███████████                   Andreessen Horowitz (a16z)
+128  ███████████                   Sequoia Capital
+ 89  ███████                       SV Angel
+ 47  ████                          500 Startups
+ 26  ██                            First Round Capital
+ 21  ██                            Accel Partners
+ 18  ██                            Greylock Partners
+ 17  █                             CrunchFund
+ 16  █                             Google Ventures
+</code></pre>
+<hr />
+<h2 id="7-viewstop-10">7. 最受關注(<code>views</code>)Top 10</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>公司</th>
+<th>views</th>
+<th>產業</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Plenty Unlimited</td>
+<td>13,413</td>
+<td>Materials(室內農業)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Xiaoming Bike</td>
+<td>7,276</td>
+<td>Industrials(共享單車)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>23andMe</td>
+<td>4,372</td>
+<td>Health Care(基因檢測)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Yuanfudao</td>
+<td>2,685</td>
+<td>教培</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Magic Ears</td>
+<td>2,516</td>
+<td>線上英語</td>
+</tr>
+</tbody>
+</table>
+<p>共享單車、中國教培/電商題材關注度特別高(對應其資料來源與讀者興趣)。</p>
+<hr />
+<h2 id="_2">復現方式</h2>
+<pre><code class="language-bash">cd ~/Documents/Program/loot-drop-clone
+uv run python fetch_all.py    # 重新爬(可選,data/ 已含結果)
+uv run python build_db.py     # data/*.json -&gt; lootdrop.db
+uv run python analyze.py      # 印出本文所有統計
+</code></pre>
+<footer>由 loot-drop.io 公開資料分析產生 · 內容為 AI 生成彙整,僅供研究</footer>
+</div>
+</body></html>
